@@ -26,8 +26,7 @@ class MyWidget(QtWidgets.QWidget):
 		self.mp3_file_name = ' '
 		self.mp3_feed = ' '
 		self.paused = False
-
-		#self.feed_path = ' '
+		self.total = 0
 
 		self.site = QtWidgets.QLineEdit()
 		self.save_button = QtWidgets.QPushButton("Save Feed")
@@ -38,40 +37,38 @@ class MyWidget(QtWidgets.QWidget):
 		self.stop_button = QtWidgets.QPushButton("stop")
 		self.unpause_button =  QtWidgets.QPushButton("unpause")
 		self.text = QtWidgets.QLabel(self.site)
-
-		self.myListWidget = QtWidgets.QListWidget()
-		self.new = QtWidgets.QListWidget()
-
+		self.play_saved_mp3 = QtWidgets.QPushButton("play saved mp3")
+		self.mp3_list = QtWidgets.QListWidget()
+		self.saved_feed_list = QtWidgets.QListWidget()
 
 		#Layout 
 		self.layout = QtWidgets.QVBoxLayout()
-
 		self.layout.addWidget(self.site)
 		self.layout.addWidget(self.text, alignment=QtCore.Qt.AlignLeft)
 		self.layout.addWidget(self.download_button, alignment=QtCore.Qt.AlignCenter)
 		self.layout.addWidget(self.save_button, alignment=QtCore.Qt.AlignCenter)
 		self.layout.addWidget(self.load_button, alignment=QtCore.Qt.AlignCenter)
-		self.layout.addWidget(self.myListWidget)
-		self.layout.addWidget(self.new)
-		self.new.hide()
-		self.myListWidget.hide()
+		self.layout.addWidget(self.play_saved_mp3, alignment=QtCore.Qt.AlignCenter)
+		self.layout.addWidget(self.mp3_list)
+		self.layout.addWidget(self.saved_feed_list)
+		self.saved_feed_list.hide()
+		self.mp3_list.hide()
+
 		#Dialog Layout
 		self.setLayout(self.layout)
 		self.test = 'testing'
+		
 		#button click
 		self.download_button.clicked.connect(self.run_stuff)
-		self.save_button.clicked.connect(self.save_file)
-		self.load_button.clicked.connect(self.load_file)
+		self.save_button.clicked.connect(self.save_feed)
+		self.load_button.clicked.connect(self.load_saved_feeds)
+		self.mp3_list.itemDoubleClicked.connect(self.download_feed)
+		self.saved_feed_list.itemDoubleClicked.connect(self.list_saved_feeds)
 
-		self.myListWidget.itemDoubleClicked.connect(self.download_feed)
-
-		self.new.itemDoubleClicked.connect(self.t)
-
-
-	def t(self):
-		self.myListWidget.hide()
-		self.new.show()
-		self.option = self.new.currentRow()
+	def list_saved_feeds(self):
+		self.mp3_list.hide()
+		self.saved_feed_list.show()
+		self.option = self.saved_feed_list.currentRow()
 
 		feed_path, config_path = assign_paths()
 
@@ -80,7 +77,7 @@ class MyWidget(QtWidgets.QWidget):
 		f.close()
 		for x, i in enumerate(s):
 			print('%s: %s' % (x,i),end='')
-			self.new.addItem(str(i))
+			self.saved_feed_list.addItem(str(i))
 
 		for x, i in enumerate(s):
 			if self.option == x:
@@ -88,24 +85,24 @@ class MyWidget(QtWidgets.QWidget):
 				print('%s: %s' % (x,i),end='')
 		self.run_stuff()
 
-	def use_msg_box(self, message_str, text_str):
+	def alert_message(self, message_str, text_str):
 		self.msg_box = QtWidgets.QMessageBox()
 		self.msg_box.setText(message_str)
 		self.text.setText(text_str)
 		self.msg_box.exec()
 		self.text.setText(' ')
 
-	def save_file(self):
+	def save_feed(self):
 		feed_path, config_path = assign_paths()
 		s = str(self.site.text())
 		with open(config_path + 'config.txt', 'a+') as f:
 			f.write(s + '\n')
 		f.close()
-		self.use_msg_box('Feed Saved!','Saved!')
+		self.alert_message('Feed Saved!','Saved!')
 
-	def load_file(self):
-		self.myListWidget.hide()
-		self.new.show()
+	def load_saved_feeds(self):
+		self.mp3_list.hide()
+		self.saved_feed_list.show()
 		feed_path, config_path = assign_paths()
 
 		with open(config_path + 'config.txt', 'r') as f:
@@ -113,40 +110,39 @@ class MyWidget(QtWidgets.QWidget):
 		f.close()
 		for x, i in enumerate(s):
 			print('%s: %s' % (x,i),end='')
-			self.new.addItem(str(i))
+			self.saved_feed_list.addItem(str(i))
+
+	def play_mp3(self):
+		mixer.music.play()
 
 	def play_audio(self,feed_path):
 		mixer.init()
 		mixer.music.load(feed_path + self.parsed_site.entries[self.mp3_index].author + '\\' + self.mp3_file_name)
 		
-		self.layout.addWidget(self.play_button)
-		self.play_button.clicked.connect(mixer.music.play)
-
-		self.layout.addWidget(self.pause_button)
-		self.pause_button.clicked.connect(self.ts)
-		
-		self.layout.addWidget(self.stop_button)
-		self.stop_button.clicked.connect(mixer.music.stop)
 		self.mp3_time = self.mp3_time / 60
 		self.mp3_seconds, self.mp3_minutes = math.modf(self.mp3_time)
 		self.mp3_seconds = round(self.mp3_seconds, 2)
+		
+		self.mp3_minutes = str(self.mp3_minutes)[:-1]
 		self.mp3_seconds = str(self.mp3_seconds)[2:]
 
-		self.mp3_minutes = str(self.mp3_minutes)[:-1]
-		print('seconds: %s\n Minutes: %s' % (self.mp3_seconds, self.mp3_minutes))
+		#print('seconds: %s\n Minutes: %s' % (self.mp3_seconds, self.mp3_minutes))
 
 		#time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
-		self.text.setText('time left:' +  str(self.mp3_minutes) + str(self.mp3_seconds))
+		#self.text.setText('time left:' +  str(self.mp3_minutes) + str(self.mp3_seconds))
+		self.layout.addWidget(self.play_button)
+		self.play_button.clicked.connect(self.play_mp3)
+
+		self.layout.addWidget(self.pause_button)
+		self.pause_button.clicked.connect(self.check_if_paused)
+		
+		self.layout.addWidget(self.stop_button)
+		self.stop_button.clicked.connect(mixer.music.stop)
 
 
-	def ts(self):
+	def check_if_paused(self):
 			if self.paused:
 				self.paused = False
-				start = time.time()
-				time.sleep(1)
-				end = time.time()
-				elapsed = end - start
-				print(elapsed)
 				return mixer.music.unpause()	
 			else:
 				self.paused = True
@@ -163,13 +159,12 @@ class MyWidget(QtWidgets.QWidget):
 		self.mp3_time = round(audiofile.info.time_secs)
 		print(self.mp3_time)
 		audiofile.tag.save()
-		self.play_audio(feed_path)
 		
 	# byte size of website
 	def download_feed(self,flag):
 
 		feed_path, config_path = assign_paths()
-		self.mp3_index = self.myListWidget.currentRow()
+		self.mp3_index = self.mp3_list.currentRow()
 		
 		self.mp3_feed = self.parsed_site.entries[self.mp3_index].links[1].href
 
@@ -208,9 +203,9 @@ class MyWidget(QtWidgets.QWidget):
 				self.mp3_file_name = n
 
 		self.save_meta_data(feed_path)
+		self.play_audio(feed_path)
 
 
-	
 	def get_site_size(self):
 		# Gets Byte size of website
 		response = requests.get(self.site.text())
@@ -222,8 +217,8 @@ class MyWidget(QtWidgets.QWidget):
 		#set_list = QtCore.QStringListModel.setStringList(self.parsed_site.entries)
 		self.parsed_site.entries.reverse()
 		for x in range(0,len(self.parsed_site.entries)):
-			print(("%d: %s") % (x , self.parsed_site.entries[x].title))
-			self.myListWidget.addItem(str(self.parsed_site.entries[x].title))
+			#print(("%d: %s") % (x , self.parsed_site.entries[x].title))
+			self.mp3_list.addItem(str(self.parsed_site.entries[x].title))
 
 	def download_site(self):
 		with urllib.request.urlopen(self.site.text()) as f:
@@ -232,8 +227,8 @@ class MyWidget(QtWidgets.QWidget):
 		print(self.site.text())
 
 	def run_stuff(self):
-			self.new.hide()
-			self.myListWidget.show()
+			self.saved_feed_list.hide()
+			self.mp3_list.show()
 			assign_paths()
 			self.get_site_size()
 			self.download_site()
@@ -286,6 +281,4 @@ if __name__ == "__main__":
 	widget.resize(800, 600)
 	widget.show()
 	
-
-
 	sys.exit(app.exec_())
