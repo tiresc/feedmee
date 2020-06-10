@@ -1,6 +1,6 @@
 "# feedmee" 
 
--Dependencies:<br />
+Dependencies:<br />
 -requests<br />
 -feedparser<br />
 -wget<br />
