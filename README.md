@@ -1,11 +1,11 @@
 "# feedmee" 
 
--Dependencies:
--requests
--feedparser
--wget
--eyed3
--pyside2
+-Dependencies:< /br>
+-requests< /br>
+-feedparser< /br>
+-wget< /br>
+-eyed3< /br>
+-pyside2< /br>
 
 Goal of this project is:
 Download RSS mp3's/ files
